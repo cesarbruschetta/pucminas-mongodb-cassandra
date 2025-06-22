@@ -1,0 +1,23 @@
+[project]
+name = "mongodb-cassandra"
+version = "0.1.0"
+description = "migração de mongoDB para Cassandra"
+authors = [
+    {name = "Cesar Augusto",email = "cesarabruschetta@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "cassandra-driver (>=3.29.2,<4.0.0)",
+    "mongo (>=0.2.0,<0.3.0)",
+    "jsonlines (>=4.0.0,<5.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+
