@@ -1,7 +1,11 @@
 import logging
 from cassandra.cluster import Cluster
 
-from mongodb_cassandra.processors import sample_airbnb_listingsAndReviews
+from mongodb_cassandra.processors import (
+    sample_airbnb_listingsAndReviews, 
+    sample_training_companies, 
+    sample_training_posts,
+)
 
 
 logging.basicConfig(
@@ -21,8 +25,14 @@ def run_processor():
         logger.info(f"Conectado ao Cassandra em {CASSANDRA_IP}")
 
         # Executa o processamento
-        logger.info("Iniciando o processamento dos dados de listingsAndReviews do MongoDB para o Cassandra.")
-        sample_airbnb_listingsAndReviews.import_data_in_cassandra(cluster)
+        # logger.info("Iniciando o processamento dos dados de listingsAndReviews do MongoDB para o Cassandra.")
+        # sample_airbnb_listingsAndReviews.import_data_in_cassandra(cluster)
+
+        # logger.info("Iniciando o processamento dos dados de sample_training_companies do MongoDB para o Cassandra.")
+        # sample_training_companies.import_data_in_cassandra(cluster)
+
+        # logger.info("Iniciando o processamento dos dados de sample_training_posts do MongoDB para o Cassandra.")
+        # sample_training_posts.import_data_in_cassandra(cluster)
 
     except Exception as e:
         logger.error(f"Erro geral: {e}")

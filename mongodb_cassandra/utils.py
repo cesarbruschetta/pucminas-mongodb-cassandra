@@ -24,6 +24,11 @@ def get_float_value(data, key):
     value = data.get(key)
     if value is None or value == "":
         return None
+    if isinstance(value, dict) and "$numberDouble" in value:
+        try:
+            return float(value["$numberDouble"])
+        except (ValueError, TypeError):
+            return None
     try:
         return float(value)
     except (ValueError, TypeError):
