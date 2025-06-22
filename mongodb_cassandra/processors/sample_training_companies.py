@@ -4,8 +4,8 @@ import jsonlines
 from cassandra.query import BatchStatement, ConsistencyLevel
 
 from mongodb_cassandra.utils import (
-    get_decimal_value,
-    get_timestamp_value,
+    get_float_value,
+    get_int_value,
     BASE_DIR,
 )
 
@@ -68,7 +68,7 @@ def import_data_in_cassandra(cluster):
         for company in reader:
             try:
                 # --- Extração e Conversão de Campos Top-Level ---
-                company_id = company.get('_id')
+                company_id = company.get('_id', {}).get('$oid')
                 if not company_id:
                     print(f"Skipping record due to missing _id: {company}")
                     continue
@@ -78,15 +78,11 @@ def import_data_in_cassandra(cluster):
                 permalink = company.get('permalink')
                 twitter_username = company.get('twitter_username')
                 description = company.get('description')
-                founded_year = company.get('founded_year')
+                founded_year = get_int_value(company, 'founded_year')
 
                 offices = company.get('offices', [])
                 offices_list = []
                 for office in offices:
-                    office_id = office.get('id')
-                    if not office_id:
-                        print(f"Skipping office due to missing id: {office}")
-                        continue
                     
                     description = office.get('description')
                     address1 = office.get('address1')
@@ -96,8 +92,8 @@ def import_data_in_cassandra(cluster):
                     country_code = office.get('country_code')
                     location = office.get('location', {})
 
-                    latitude = get_decimal_value(location.get('latitude'))
-                    longitude = get_decimal_value(location.get('longitude'))
+                    latitude = get_float_value(location, 'latitude')
+                    longitude = get_float_value(location, 'longitude')
 
                     offices_list.append(Office(**{
                         'description': description,
@@ -115,11 +111,11 @@ def import_data_in_cassandra(cluster):
                 funding_rounds_list = []
                 for funding_round in funding_rounds:
                     round_code = funding_round.get('round_code')
-                    raised_amount = get_decimal_value(funding_round.get('raised_amount'))
+                    raised_amount = get_int_value(funding_round, 'raised_amount')
                     currency_code = funding_round.get('currency_code')
-                    funded_year = funding_round.get('funded_year')
-                    funded_month = funding_round.get('funded_month')
-                    funded_day = funding_round.get('funded_day')
+                    funded_year = get_int_value(funding_round, 'funded_year')
+                    funded_month = get_int_value(funding_round, 'funded_month')
+                    funded_day = get_int_value(funding_round, 'funded_day')
 
                     funding_rounds_list.append(FundingRound(
                         round_code=round_code,
@@ -145,7 +141,7 @@ def import_data_in_cassandra(cluster):
                     logger.info(f"Inseridos {processed_count} listagens...")
 
             except Exception as e:
-                logger.info(f"Erro ao processar a listagem {company.get('_id')}: {e}")
+                logger.info(f"Erro ao processar a listagem {company_id}: {e}")
 
     # Executa qualquer batch restante
     session.execute(batch)
