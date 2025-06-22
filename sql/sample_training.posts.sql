@@ -16,6 +16,10 @@ CREATE TYPE IF NOT EXISTS comment_udt (
 CREATE TABLE IF NOT EXISTS sample_training.posts (
     id text PRIMARY KEY,
     body text,
+    permalink text,
+    author text,
+    title text,
+    tags set<text>,
     comments list<frozen<comment_udt>>,
     date timestamp
 );

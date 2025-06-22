@@ -12,10 +12,10 @@ from mongodb_cassandra.utils import (
 logger = logging.getLogger(__name__)
 
 class Comments:
-    def __init__(self, body, email, date):
+    def __init__(self, body, email, author):
         self.body = body
         self.email = email
-        self.date = date
+        self.author = author
 
 
 def import_data_in_cassandra(cluster):
@@ -29,9 +29,9 @@ def import_data_in_cassandra(cluster):
         """
        INSERT INTO sample_training.posts
         ( 
-            id, body, comments, date
-        ) VALUES ( ?, ?, ?, ? );
-        
+            id, body, permalink, author, title,
+            tags, comments, date
+        ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?);        
     """
     )
     insert_listing_cql.consistency_level = (
@@ -47,13 +47,17 @@ def import_data_in_cassandra(cluster):
         for post in reader:
             try:
                 # --- Extração e Conversão de Campos Top-Level ---
-                post_id = post.get('_id')
+                post_id = post.get('_id', {}).get('$oid')
                 if not post_id:
                     print(f"Skipping record due to missing _id: {post}")
                     continue
 
                 body = post.get('body')
-                date = get_timestamp_value(post.get('date'))
+                permalink = post.get('permalink')
+                author = post.get('author')
+                title = post.get('title')
+                tags = post.get('tags', [])
+                date = get_timestamp_value(post, 'date')
 
                 comments = post.get('comments', [])
                 comments_list = []
@@ -65,7 +69,8 @@ def import_data_in_cassandra(cluster):
 
                 # --- Montar os parâmetros para a inserção ---
                 params = (
-                    post_id, body, comments_list, date
+                    post_id, body, permalink, author, title,
+                    tags, comments_list, date
                 )
 
                 batch.add(insert_listing_cql, params)
