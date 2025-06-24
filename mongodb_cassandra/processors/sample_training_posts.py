@@ -1,15 +1,14 @@
 import logging
-import json
 import jsonlines
 from cassandra.query import BatchStatement, ConsistencyLevel
 
 from mongodb_cassandra.utils import (
-    get_decimal_value,
     get_timestamp_value,
     BASE_DIR,
 )
 
 logger = logging.getLogger(__name__)
+
 
 class Comments:
     def __init__(self, body, email, author):
@@ -34,43 +33,45 @@ def import_data_in_cassandra(cluster):
         ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?);        
     """
     )
-    insert_listing_cql.consistency_level = (
-        ConsistencyLevel.QUORUM
-    )
+    insert_listing_cql.consistency_level = ConsistencyLevel.QUORUM
     batch = BatchStatement()
     processed_count = 0
     batch_size = 1  # Número de inserções por batch
 
-    with jsonlines.open(
-        BASE_DIR / "data/sample_training.posts.json", 'r'
-    ) as reader:
+    with jsonlines.open(BASE_DIR / "data/sample_training.posts.json", "r") as reader:
         for post in reader:
             try:
                 # --- Extração e Conversão de Campos Top-Level ---
-                post_id = post.get('_id', {}).get('$oid')
+                post_id = post.get("_id", {}).get("$oid")
                 if not post_id:
                     print(f"Skipping record due to missing _id: {post}")
                     continue
 
-                body = post.get('body')
-                permalink = post.get('permalink')
-                author = post.get('author')
-                title = post.get('title')
-                tags = post.get('tags', [])
-                date = get_timestamp_value(post, 'date')
+                body = post.get("body")
+                permalink = post.get("permalink")
+                author = post.get("author")
+                title = post.get("title")
+                tags = post.get("tags", [])
+                date = get_timestamp_value(post, "date")
 
-                comments = post.get('comments', [])
+                comments = post.get("comments", [])
                 comments_list = []
                 for comment in comments:
-                    body = comment.get('body')
-                    email = comment.get('email')
-                    author = comment.get('author')
+                    body = comment.get("body")
+                    email = comment.get("email")
+                    author = comment.get("author")
                     comments_list.append(Comments(body, email, author))
 
                 # --- Montar os parâmetros para a inserção ---
                 params = (
-                    post_id, body, permalink, author, title,
-                    tags, comments_list, date
+                    post_id,
+                    body,
+                    permalink,
+                    author,
+                    title,
+                    tags,
+                    comments_list,
+                    date,
                 )
 
                 batch.add(insert_listing_cql, params)
@@ -86,6 +87,4 @@ def import_data_in_cassandra(cluster):
 
     # Executa qualquer batch restante
     session.execute(batch)
-    logger.info(
-        f"Inserção final: {processed_count} listagens processadas no total."
-    )
+    logger.info(f"Inserção final: {processed_count} listagens processadas no total.")

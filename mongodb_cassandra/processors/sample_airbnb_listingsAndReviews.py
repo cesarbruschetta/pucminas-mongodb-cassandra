@@ -1,5 +1,4 @@
 import logging
-import json
 import jsonlines
 from cassandra.query import BatchStatement, ConsistencyLevel
 
@@ -11,8 +10,11 @@ from mongodb_cassandra.utils import (
 
 logger = logging.getLogger(__name__)
 
+
 class Reviews:
-    def __init__(self, id, date_review, listing_id, reviewer_id, reviewer_name, comments):
+    def __init__(
+        self, id, date_review, listing_id, reviewer_id, reviewer_name, comments
+    ):
         self.id = id
         self.date_review = date_review
         self.listing_id = listing_id
@@ -38,49 +40,60 @@ def import_data_in_cassandra(cluster):
         
     """
     )
-    insert_listing_cql.consistency_level = (
-        ConsistencyLevel.QUORUM
-    )
+    insert_listing_cql.consistency_level = ConsistencyLevel.QUORUM
     batch = BatchStatement()
     processed_count = 0
     batch_size = 1  # Número de inserções por batch
 
     with jsonlines.open(
-        BASE_DIR / "data/sample_airbnb.listingsAndReviews.json", 'r'
+        BASE_DIR / "data/sample_airbnb.listingsAndReviews.json", "r"
     ) as reader:
         for listing in reader:
             try:
                 # --- Extração e Conversão de Campos Top-Level ---
-                listing_id = listing.get('_id')
+                listing_id = listing.get("_id")
                 if not listing_id:
                     print(f"Skipping record due to missing _id: {listing}")
                     continue
 
-                listing_url = listing.get('listing_url')
-                name = listing.get('name')
-                description = listing.get('description')
-                summary = listing.get('summary')
-                space = listing.get('space')
-                neighborhood_overview = listing.get('neighborhood_overview')
-                price = get_decimal_value(listing, 'price')
-                amenities = set(listing.get('amenities', []))
-                
+                listing_url = listing.get("listing_url")
+                name = listing.get("name")
+                description = listing.get("description")
+                summary = listing.get("summary")
+                space = listing.get("space")
+                neighborhood_overview = listing.get("neighborhood_overview")
+                price = get_decimal_value(listing, "price")
+                amenities = set(listing.get("amenities", []))
+
                 reviews_list_for_cassandra = []
-                for review_json in listing.get('reviews', [])[:10]:  # Limita a 10 reviews
-                    review_data_for_udt = Reviews(**{
-                        'id': review_json.get('_id'),
-                        'date_review': get_timestamp_value(review_json, 'date'),
-                        'listing_id': review_json.get('listing_id'),
-                        'reviewer_id': review_json.get('reviewer_id'),
-                        'reviewer_name': review_json.get('reviewer_name'),
-                        'comments': review_json.get('comments')
-                    })
-                    reviews_list_for_cassandra.append(review_data_for_udt) # Adiciona o dicionário diretamente
+                for review_json in listing.get("reviews", [])[
+                    :10
+                ]:  # Limita a 10 reviews
+                    review_data_for_udt = Reviews(
+                        **{
+                            "id": review_json.get("_id"),
+                            "date_review": get_timestamp_value(review_json, "date"),
+                            "listing_id": review_json.get("listing_id"),
+                            "reviewer_id": review_json.get("reviewer_id"),
+                            "reviewer_name": review_json.get("reviewer_name"),
+                            "comments": review_json.get("comments"),
+                        }
+                    )
+                    reviews_list_for_cassandra.append(
+                        review_data_for_udt
+                    )  # Adiciona o dicionário diretamente
 
                 # --- Montar os parâmetros para a inserção ---
                 params = (
-                    listing_id, listing_url, name, summary, space, description, 
-                    neighborhood_overview, price, amenities, 
+                    listing_id,
+                    listing_url,
+                    name,
+                    summary,
+                    space,
+                    description,
+                    neighborhood_overview,
+                    price,
+                    amenities,
                     tuple(reviews_list_for_cassandra),
                 )
 
@@ -97,6 +110,4 @@ def import_data_in_cassandra(cluster):
 
     # Executa qualquer batch restante
     session.execute(batch)
-    logger.info(
-        f"Inserção final: {processed_count} listagens processadas no total."
-    )
+    logger.info(f"Inserção final: {processed_count} listagens processadas no total.")

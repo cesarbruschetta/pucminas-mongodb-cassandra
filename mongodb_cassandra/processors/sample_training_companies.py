@@ -1,5 +1,4 @@
 import logging
-import json
 import jsonlines
 from cassandra.query import BatchStatement, ConsistencyLevel
 
@@ -11,13 +10,25 @@ from mongodb_cassandra.utils import (
 
 logger = logging.getLogger(__name__)
 
+
 class OfficeLocation:
-    def __init__(self,latitude, longitude):
+    def __init__(self, latitude, longitude):
         self.latitude = latitude
         self.longitude = longitude
 
+
 class Office:
-     def __init__(self, description, address1, address2, zip_code, city, state_code, country_code, location):
+    def __init__(
+        self,
+        description,
+        address1,
+        address2,
+        zip_code,
+        city,
+        state_code,
+        country_code,
+        location,
+    ):
         self.description = description
         self.address1 = address1
         self.address2 = address2
@@ -29,7 +40,15 @@ class Office:
 
 
 class FundingRound:
-    def __init__(self, round_code, raised_amount, currency_code, funded_year, funded_month, funded_day):
+    def __init__(
+        self,
+        round_code,
+        raised_amount,
+        currency_code,
+        funded_year,
+        funded_month,
+        funded_day,
+    ):
         self.round_code = round_code
         self.raised_amount = raised_amount
         self.currency_code = currency_code
@@ -55,81 +74,89 @@ def import_data_in_cassandra(cluster):
         
     """
     )
-    insert_listing_cql.consistency_level = (
-        ConsistencyLevel.QUORUM
-    )
+    insert_listing_cql.consistency_level = ConsistencyLevel.QUORUM
     batch = BatchStatement()
     processed_count = 0
     batch_size = 1  # Número de inserções por batch
 
     with jsonlines.open(
-        BASE_DIR / "data/sample_training.companies.json", 'r'
+        BASE_DIR / "data/sample_training.companies.json", "r"
     ) as reader:
         for company in reader:
             try:
                 # --- Extração e Conversão de Campos Top-Level ---
-                company_id = company.get('_id', {}).get('$oid')
+                company_id = company.get("_id", {}).get("$oid")
                 if not company_id:
                     print(f"Skipping record due to missing _id: {company}")
                     continue
 
-                
-                name = company.get('name')
-                permalink = company.get('permalink')
-                twitter_username = company.get('twitter_username')
-                description = company.get('description')
-                founded_year = get_int_value(company, 'founded_year')
+                name = company.get("name")
+                permalink = company.get("permalink")
+                twitter_username = company.get("twitter_username")
+                description = company.get("description")
+                founded_year = get_int_value(company, "founded_year")
 
-                offices = company.get('offices', [])
+                offices = company.get("offices", [])
                 offices_list = []
                 for office in offices:
-                    
-                    description = office.get('description')
-                    address1 = office.get('address1')
-                    address2 = office.get('address2')
-                    zip_code = office.get('zip_code')
-                    state_code = office.get('state_code')
-                    country_code = office.get('country_code')
-                    location = office.get('location', {})
 
-                    latitude = get_float_value(location, 'latitude')
-                    longitude = get_float_value(location, 'longitude')
+                    description = office.get("description")
+                    address1 = office.get("address1")
+                    address2 = office.get("address2")
+                    zip_code = office.get("zip_code")
+                    state_code = office.get("state_code")
+                    country_code = office.get("country_code")
+                    location = office.get("location", {})
 
-                    offices_list.append(Office(**{
-                        'description': description,
-                        'address1': address1,
-                        'address2': address2,
-                        'zip_code': zip_code,
-                        'city': office.get('city'),
-                        'state_code': state_code,
-                        'country_code': country_code,
-                        'location': OfficeLocation(latitude, longitude)
-                    }))
+                    latitude = get_float_value(location, "latitude")
+                    longitude = get_float_value(location, "longitude")
 
+                    offices_list.append(
+                        Office(
+                            **{
+                                "description": description,
+                                "address1": address1,
+                                "address2": address2,
+                                "zip_code": zip_code,
+                                "city": office.get("city"),
+                                "state_code": state_code,
+                                "country_code": country_code,
+                                "location": OfficeLocation(latitude, longitude),
+                            }
+                        )
+                    )
 
-                funding_rounds = company.get('funding_rounds', [])
+                funding_rounds = company.get("funding_rounds", [])
                 funding_rounds_list = []
                 for funding_round in funding_rounds:
-                    round_code = funding_round.get('round_code')
-                    raised_amount = get_int_value(funding_round, 'raised_amount')
-                    currency_code = funding_round.get('currency_code')
-                    funded_year = get_int_value(funding_round, 'funded_year')
-                    funded_month = get_int_value(funding_round, 'funded_month')
-                    funded_day = get_int_value(funding_round, 'funded_day')
+                    round_code = funding_round.get("round_code")
+                    raised_amount = get_int_value(funding_round, "raised_amount")
+                    currency_code = funding_round.get("currency_code")
+                    funded_year = get_int_value(funding_round, "funded_year")
+                    funded_month = get_int_value(funding_round, "funded_month")
+                    funded_day = get_int_value(funding_round, "funded_day")
 
-                    funding_rounds_list.append(FundingRound(
-                        round_code=round_code,
-                        raised_amount=raised_amount,
-                        currency_code=currency_code,
-                        funded_year=funded_year,
-                        funded_month=funded_month,
-                        funded_day=funded_day
-                    ))
+                    funding_rounds_list.append(
+                        FundingRound(
+                            round_code=round_code,
+                            raised_amount=raised_amount,
+                            currency_code=currency_code,
+                            funded_year=funded_year,
+                            funded_month=funded_month,
+                            funded_day=funded_day,
+                        )
+                    )
 
                 # --- Montar os parâmetros para a inserção ---
                 params = (
-                    company_id, name, permalink, twitter_username, description,
-                    founded_year, offices_list, funding_rounds_list
+                    company_id,
+                    name,
+                    permalink,
+                    twitter_username,
+                    description,
+                    founded_year,
+                    offices_list,
+                    funding_rounds_list,
                 )
 
                 batch.add(insert_listing_cql, params)
@@ -145,6 +172,4 @@ def import_data_in_cassandra(cluster):
 
     # Executa qualquer batch restante
     session.execute(batch)
-    logger.info(
-        f"Inserção final: {processed_count} listagens processadas no total."
-    )
+    logger.info(f"Inserção final: {processed_count} listagens processadas no total.")
