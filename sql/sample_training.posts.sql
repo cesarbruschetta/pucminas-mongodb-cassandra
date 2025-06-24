@@ -23,3 +23,6 @@ CREATE TABLE IF NOT EXISTS sample_training.posts (
     comments list<frozen<comment_udt>>,
     date timestamp
 );
+
+CREATE INDEX IF NOT EXISTS on_post_author ON posts (author);
+CREATE INDEX IF NOT EXISTS on_post_tags ON posts (tags);

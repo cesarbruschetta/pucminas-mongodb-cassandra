@@ -43,3 +43,5 @@ CREATE TABLE IF NOT EXISTS companies (
     offices list<frozen<office_udt>>,
     funding_rounds list<frozen<funding_round_udt>>,
 );
+
+CREATE INDEX IF NOT EXISTS on_founded_year ON companies (founded_year);

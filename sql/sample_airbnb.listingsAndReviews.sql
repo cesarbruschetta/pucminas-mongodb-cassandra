@@ -25,3 +25,6 @@ CREATE TABLE IF NOT EXISTS listingsAndReviews (
     amenities set<text>,
     reviews list<frozen<review_udt>>
 );
+
+CREATE INDEX IF NOT EXISTS on_amenities ON listingsAndReviews (amenities);
+CREATE INDEX IF NOT EXISTS on_price ON listingsAndReviews (price);
