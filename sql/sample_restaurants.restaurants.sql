@@ -27,3 +27,6 @@ CREATE TABLE IF NOT EXISTS restaurants (
     name text,
     restaurant_id text
 );
+
+CREATE INDEX IF NOT EXISTS on_restaurant_name ON restaurants (name);
+CREATE INDEX IF NOT EXISTS on_restaurant_borough ON restaurants (borough);
